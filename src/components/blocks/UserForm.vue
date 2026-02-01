@@ -3,9 +3,18 @@
     <div class="form-modal" @click.stop>
       <div class="modal-header">
         <h2>{{ isEditing ? 'Редактировать сотрудника' : 'Добавить сотрудника' }}</h2>
-        <button class="close-btn" @click="close">×</button>
+        <button type="button" class="close-btn" @click="close">×</button>
       </div>
       
+      <!-- Просто добавляем блок для ошибок -->
+      <div v-if="formErrors.length > 0" class="form-errors">
+        <div class="error-title">Исправьте ошибки:</div>
+        <div v-for="error in formErrors" :key="error" class="error-item">
+          {{ error }}
+        </div>
+      </div>
+      
+      <!-- Вся форма остается без изменений -->
       <form @submit.prevent="handleSubmit">
         <div class="form-content">
           <div class="form-group">
@@ -16,8 +25,6 @@
               type="text"
               class="form-input"
               placeholder="Введите имя"
-              required
-              @input="updateField('firstName', $event)"
             />
           </div>
           
@@ -29,8 +36,6 @@
               type="text"
               class="form-input"
               placeholder="Введите фамилию"
-              required
-              @input="updateField('lastName', $event)"
             />
           </div>
           
@@ -40,8 +45,6 @@
               id="position"
               v-model="formData.position"
               class="form-select"
-              required
-              @change="updateField('position', $event)"
             >
               <option value="" disabled>Выберите должность</option>
               <option value="Директор">Директор</option>
@@ -65,8 +68,7 @@
                 max="100"
                 class="form-input"
                 placeholder="18-100"
-                required
-                @input="updateField('age', $event)"
+
               />
             </div>
             
@@ -77,11 +79,9 @@
                 v-model.number="formData.experience"
                 type="number"
                 min="0"
-                max="82"
                 class="form-input"
                 placeholder="0-82"
-                required
-                @input="updateField('experience', $event)"
+
               />
             </div>
           </div>
@@ -94,8 +94,7 @@
               class="form-textarea"
               rows="3"
               placeholder="Введите адрес"
-              required
-              @input="updateField('address', $event)"
+
             ></textarea>
           </div>
         </div>
@@ -118,7 +117,7 @@
 
 <script lang="ts">
 import { defineComponent, reactive, watch } from 'vue';
-import type { IEmployee } from '../../models/employee';
+import { Employee, type IEmployee } from '../../models/employee';
 import FormButton from '../ui/FormButton.vue';
 
 interface FormData {
@@ -165,6 +164,9 @@ export default defineComponent({
       address: ''
     });
 
+    const formErrors = reactive<string[]>([]);
+
+    // Заполняем форму при открытии
     watch(() => props.employee, (employee) => {
       if (employee) {
         formData.firstName = employee.firstName || '';
@@ -182,26 +184,30 @@ export default defineComponent({
         formData.age = 18;
         formData.address = '';
       }
+      // Очищаем ошибки при смене сотрудника
+      formErrors.length = 0;
     }, { immediate: true });
 
-    const updateField = (field: keyof FormData, event: Event): void => {
-      const target = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-      let value: string | number;
-      
-      if (field === 'age' || field === 'experience') {
-        value = parseInt(target.value) || 0;
-      } else {
-        value = target.value;
-      }
-      
-      formData[field] = value as never;
-    };
-
     const close = (): void => {
+      formErrors.length = 0;
       emit('close');
     };
 
     const handleSubmit = (): void => {
+      // Очищаем старые ошибки
+      formErrors.length = 0;
+      
+      // ВАЛИДАЦИЯ ПРЯМО В ФОРМЕ!
+      const employee = new Employee(formData);
+      const validation = employee.validate();
+      
+      if (!validation.isValid) {
+        // Показываем ошибки в форме вместо alert
+        formErrors.push(...validation.errors);
+        return; // Не отправляем форму
+      }
+      
+      // Если все ок - отправляем
       const employeeData: IEmployee = {
         id: props.employee?.id || Date.now() + Math.random(),
         firstName: formData.firstName.trim(),
@@ -211,12 +217,13 @@ export default defineComponent({
         age: formData.age,
         address: formData.address.trim()
       };
+      
       emit('save', employeeData);
     };
 
     return {
       formData,
-      updateField,
+      formErrors,
       close,
       handleSubmit
     };
@@ -295,6 +302,26 @@ export default defineComponent({
   &:hover {
     background-color: #f1f5f9;
   }
+}
+
+/* Простой блок для ошибок */
+.form-errors {
+  margin: 16px 24px 0;
+  padding: 12px;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 6px;
+  color: #c00;
+}
+
+.error-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.error-item {
+  font-size: 14px;
+  margin: 2px 0;
 }
 
 form {

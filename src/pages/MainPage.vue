@@ -37,6 +37,7 @@ import { useStaff } from '../composables/useStaff';
 import StaffTable from '../components/blocks/StaffTable.vue';
 import UserForm from '../components/blocks/UserForm.vue';
 import HeaderButton from '../components/ui/HeaderButton.vue';
+import type { Employee } from '../models/employee';
 
 export default defineComponent({
   name: 'MainPage',
@@ -60,7 +61,7 @@ export default defineComponent({
       }
     };
     
-    const handleSave = async (employeeData: any): Promise<void> => {
+    const handleSave = async (employeeData: Employee): Promise<void> => {
       const success = await staff.saveEmployee(employeeData);
       if (success) {
         staff.closeForm();

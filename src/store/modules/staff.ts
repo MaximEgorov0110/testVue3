@@ -4,49 +4,49 @@ import type { IEmployee } from '../../models/employee';
 
 export const useStaffStore = defineStore('staff', {
   state: () => ({
-    employees: JSON.parse(localStorage.getItem('staff_employees') || '[]') as IEmployee[],
-    currentEmployee: null as IEmployee | null,
+    employees: JSON.parse(localStorage.getItem('staff_employees') || '[]')
+      .map((emp: any) => new Employee(emp)) as Employee[],
+    currentEmployee: null as Employee | null,
     isEditing: false,
     showForm: false
   }),
 
   getters: {
-    getEmployees: (state): Employee[] =>
-      state.employees.map(emp => new Employee(emp)),
+    getEmployees: (state): Employee[] => state.employees,
 
     getEmployeeById: (state) => (id: number): Employee | undefined => {
-      const empData = state.employees.find(emp => emp.id === id);
-      return empData ? new Employee(empData) : undefined;
+      return state.employees.find(emp => emp.id === id);
     },
 
     getEmployeesCount: (state): number => state.employees.length,
 
     isCurrentEmployeeValid: (state): boolean => {
-      if (!state.currentEmployee) return false;
-      const employee = new Employee(state.currentEmployee);
-      return employee.validate().isValid;
+      return state.currentEmployee?.validate().isValid || false;
     },
 
     getCurrentEmployeeErrors: (state): string[] => {
-      if (!state.currentEmployee) return [];
-      const employee = new Employee(state.currentEmployee);
-      return employee.validate().errors;
+      return state.currentEmployee?.validate().errors || [];
     },
-
-    currentEmployeeAsObject: (state): Employee | null => {
-      return state.currentEmployee ? new Employee(state.currentEmployee) : null;
-    }
   },
 
   actions: {
     saveToStorage() {
-      localStorage.setItem('staff_employees', JSON.stringify(this.employees));
+      const employeesData = this.employees.map(emp => ({
+        id: emp.id,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        position: emp.position,
+        experience: emp.experience,
+        age: emp.age,
+        address: emp.address
+      }));
+      localStorage.setItem('staff_employees', JSON.stringify(employeesData));
     },
 
     init() {
       if (this.employees.length === 0) {
-        const defaultEmployees: IEmployee[] = [
-          {
+        this.employees = [
+          new Employee({
             id: 1,
             firstName: 'Иван',
             lastName: 'Петров',
@@ -54,8 +54,8 @@ export const useStaffStore = defineStore('staff', {
             experience: 10,
             age: 45,
             address: 'Москва, ул. Ленина, д. 10'
-          },
-          {
+          }),
+          new Employee({
             id: 2,
             firstName: 'Мария',
             lastName: 'Сидорова',
@@ -63,8 +63,8 @@ export const useStaffStore = defineStore('staff', {
             experience: 15,
             age: 42,
             address: 'Санкт-Петербург, Невский пр., д. 25'
-          },
-          {
+          }),
+          new Employee({
             id: 3,
             firstName: 'Алексей',
             lastName: 'Иванов',
@@ -72,16 +72,14 @@ export const useStaffStore = defineStore('staff', {
             experience: 3,
             age: 28,
             address: 'Казань, ул. Баумана, д. 15'
-          }
+          })
         ];
-
-        this.employees = defaultEmployees;
         this.saveToStorage();
       }
     },
 
     openAddForm() {
-      this.currentEmployee = {
+      this.currentEmployee = new Employee({
         id: Date.now() + Math.random(),
         firstName: '',
         lastName: '',
@@ -89,15 +87,15 @@ export const useStaffStore = defineStore('staff', {
         experience: 0,
         age: 18,
         address: ''
-      };
+      });
       this.isEditing = false;
       this.showForm = true;
     },
 
     openEditForm(id: number) {
-      const employeeData = this.employees.find(emp => emp.id === id);
-      if (employeeData) {
-        this.currentEmployee = { ...employeeData };
+      const employee = this.employees.find(emp => emp.id === id);
+      if (employee) {
+        this.currentEmployee = employee.clone(); // Используем клонирование
         this.isEditing = true;
         this.showForm = true;
       }
@@ -111,10 +109,10 @@ export const useStaffStore = defineStore('staff', {
 
     updateCurrentEmployee(employeeData: Partial<IEmployee>) {
       if (this.currentEmployee) {
-        this.currentEmployee = {
+        this.currentEmployee = new Employee({
           ...this.currentEmployee,
           ...employeeData
-        };
+        });
       }
     },
 
@@ -126,7 +124,7 @@ export const useStaffStore = defineStore('staff', {
         throw new Error(validation.errors.join('\n'));
       }
 
-      this.employees.push(employee.toJSON());
+      this.employees.push(employee);
       this.saveToStorage();
       return employee;
     },
@@ -141,7 +139,7 @@ export const useStaffStore = defineStore('staff', {
 
       const index = this.employees.findIndex(emp => emp.id === employee.id);
       if (index !== -1) {
-        this.employees[index] = employee.toJSON();
+        this.employees[index] = employee;
         this.saveToStorage();
         return employee;
       }
@@ -161,10 +159,9 @@ export const useStaffStore = defineStore('staff', {
           ...employeeData,
           id: this.currentEmployee.id
         } as IEmployee);
-      } else {
-        // Добавить нового
-        return this.addEmployee(employeeData);
       }
+      // Добавить нового
+      return this.addEmployee(employeeData);
     }
   }
 });
