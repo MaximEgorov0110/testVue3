@@ -6,7 +6,6 @@
         <button type="button" class="close-btn" @click="close">×</button>
       </div>
       
-      <!-- Просто добавляем блок для ошибок -->
       <div v-if="formErrors.length > 0" class="form-errors">
         <div class="error-title">Исправьте ошибки:</div>
         <div v-for="error in formErrors" :key="error" class="error-item">
@@ -14,7 +13,6 @@
         </div>
       </div>
       
-      <!-- Вся форма остается без изменений -->
       <form @submit.prevent="handleSubmit">
         <div class="form-content">
           <div class="form-group">
@@ -166,7 +164,6 @@ export default defineComponent({
 
     const formErrors = reactive<string[]>([]);
 
-    // Заполняем форму при открытии
     watch(() => props.employee, (employee) => {
       if (employee) {
         formData.firstName = employee.firstName || '';
@@ -176,7 +173,7 @@ export default defineComponent({
         formData.age = employee.age || 18;
         formData.address = employee.address || '';
       } else {
-        // Сброс формы
+
         formData.firstName = '';
         formData.lastName = '';
         formData.position = '';
@@ -184,7 +181,7 @@ export default defineComponent({
         formData.age = 18;
         formData.address = '';
       }
-      // Очищаем ошибки при смене сотрудника
+
       formErrors.length = 0;
     }, { immediate: true });
 
@@ -194,20 +191,16 @@ export default defineComponent({
     };
 
     const handleSubmit = (): void => {
-      // Очищаем старые ошибки
       formErrors.length = 0;
       
-      // ВАЛИДАЦИЯ ПРЯМО В ФОРМЕ!
       const employee = new Employee(formData);
       const validation = employee.validate();
       
       if (!validation.isValid) {
-        // Показываем ошибки в форме вместо alert
         formErrors.push(...validation.errors);
-        return; // Не отправляем форму
+        return; 
       }
       
-      // Если все ок - отправляем
       const employeeData: IEmployee = {
         id: props.employee?.id || Date.now() + Math.random(),
         firstName: formData.firstName.trim(),
@@ -304,14 +297,13 @@ export default defineComponent({
   }
 }
 
-/* Простой блок для ошибок */
 .form-errors {
   margin: 16px 24px 0;
   padding: 12px;
-  background: #fee;
-  border: 1px solid #fcc;
+  background: #feeeee;
+  border: 1px solid #fccccc;
   border-radius: 6px;
-  color: #c00;
+  color: #cc0000;
 }
 
 .error-title {
@@ -386,7 +378,7 @@ form {
 }
 
 .form-textarea {
-  resize: vertical;
+  resize: none;
   min-height: 100px;
 }
 
