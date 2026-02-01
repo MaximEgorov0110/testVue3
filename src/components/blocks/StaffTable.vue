@@ -70,7 +70,7 @@ export default defineComponent({
   
   emits: ['edit', 'delete'],
   
-  setup(props, { emit }) {
+  setup(_, { emit }) {
     const handleEdit = (id: number): void => {
       emit('edit', id);
     };
